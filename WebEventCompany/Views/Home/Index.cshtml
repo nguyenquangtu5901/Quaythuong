@@ -867,7 +867,7 @@
                 if (idx === $boxes.length - 1) {
                   finishSpin(chosenWinner);
                 }
-              }, 1100 + idx * 380);
+              }, 12000 + idx * 4000);
             });
           });
 
@@ -1070,7 +1070,7 @@
           function renderPrizeConfigModal() {
             const html = prizes.map((p, idx) => `
               <div class="row g-2 mb-2 align-items-center">
-                <div class="col-8"><input type="text" class="form-control form-control-sm search-input-dark ps-2 prize-name-input" data-idx="${idx}" value="${p.name}"></div>
+                <div class="col-8"><input type="text" disable class="form-control form-control-sm search-input-dark ps-2 prize-name-input" data-idx="${idx}" value="${p.name}"></div>
                 <div class="col-4"><input type="text" disable class="form-control form-control-sm search-input-dark ps-2 text-center prize-total-input" data-idx="${idx}" value="${p.total}" min="1"></div>
               </div>
             `).join('');
