@@ -1,0 +1,2 @@
+D:\SW\giaithuong\Quaythuong\WebEventCompany\bin\Debug\net8.0\WebEventCompany.exe
+D:\SW\giaithuong\Quaythuong\WebEventCompany\bin\Debug\net8.0\WebEventCompany.dll

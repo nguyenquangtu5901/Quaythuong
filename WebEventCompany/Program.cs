@@ -1,6 +1,14 @@
+using WebEventCompany.Options;
+using WebEventCompany.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection(SupabaseOptions.SectionName));
+builder.Services.AddHttpClient<ILuckyDrawUserService, SupabaseLuckyDrawUserService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();

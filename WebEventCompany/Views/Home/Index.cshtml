@@ -440,7 +440,7 @@
                 <div class="modal-header dark-modal-header d-flex justify-content-between align-items-start">
                     <div>
                         <h5 class="modal-title fw-bold fs-4 mb-1">Danh sách quay số</h5>
-                        <p class="text-secondary small mb-0">Cấu hình nguồn dữ liệu quay số</p>
+                        <p class="text-secondary small mb-0">Nguồn: Supabase bảng public.user — bấm Tải lại dữ liệu để đồng bộ</p>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -653,11 +653,11 @@
           // 1. CẤU HÌNH ENDPOINT API .NET 8 (Bạn chỉ cần sửa URL tại đây)
           // =========================================================================
           const API_CONFIG = {
-            useBackendApi: false, // Đổi thành true khi đã viết xong API ở .NET 8
-            getParticipantsUrl: '/api/LuckyDraw/GetParticipants', // GET: trả về [{ code, name, dept }]
-            getWinnersUrl: '/api/LuckyDraw/GetWinners',           // GET: trả về [{ code, name, dept, prizeId, prizeName }]
-            saveWinnerUrl: '/api/LuckyDraw/SaveWinner',           // POST: body { code, name, dept, prizeId, prizeName }
-            resetWinnersUrl: '/api/LuckyDraw/ResetWinners'        // POST: reset toàn bộ kết quả dưới DB/Excel
+            useBackendApi: true,
+            getParticipantsUrl: '/api/LuckyDraw/GetParticipants',
+            getWinnersUrl: '/api/LuckyDraw/GetWinners',
+            saveWinnerUrl: '/api/LuckyDraw/SaveWinner',
+            resetWinnersUrl: '/api/LuckyDraw/ResetWinners'
           };
 
           // =========================================================================
@@ -678,16 +678,7 @@
           let lastWinner = null;
 
           // Dữ liệu mẫu đúng chuẩn cấu trúc sheet nhanvien của bạn
-          let participants = [
-            { code: 'VN000032', name: 'Tô Văn Thọ', dept: 'Phòng Tổng Vụ' },
-            { code: 'VN000034', name: 'Bùi Văn Hiệp', dept: 'Bộ phận R&D' },
-            { code: 'VN000035', name: 'Nguyễn Văn Đang', dept: 'Bộ Phận Gia Công' },
-            { code: 'VN000043', name: 'Nguyễn Ngọc Sơn', dept: 'Bộ Phận Gia Công' },
-            { code: 'VN000061', name: 'Đặng Hồng Phúc', dept: 'Phòng Tổng Vụ' },
-            { code: 'VN000064', name: 'Nguyễn Văn Hoàng', dept: 'Bộ phận Thiết Bị' },
-            { code: 'VN000065', name: 'Nguyễn Thị Kim Oanh', dept: 'Bộ phận KHSX' },
-            { code: 'VN000068', name: 'Phí Quang Hồng', dept: 'Bộ Phận Gia Công' }
-          ];
+         
 
           let winners = { kk: [], g4: [], g3: [], g2: [], g1: [], db: [] };
           let deletedWinnersHistory = [];
@@ -702,6 +693,14 @@
           // =========================================================================
           // 3. HÀM GỌI API .NET 8 BẰNG JQUERY AJAX
           // =========================================================================
+          function mapParticipant(p) {
+            return {
+              code: (p.code || p.Code || '').toString().trim().toUpperCase(),
+              name: (p.name || p.Name || '').toString().trim(),
+              dept: (p.dept || p.Dept || '').toString().trim()
+            };
+          }
+
           function loadDataFromDotNetApi() {
             if (!API_CONFIG.useBackendApi) {
               syncParticipantsViews();
@@ -709,35 +708,22 @@
               return;
             }
 
-            $('#totalPlayersBadge').text('Đang tải...');
+            $('#totalPlayersBadge').text('...');
 
-            // Gọi song song danh sách nhân viên và danh sách đã trúng giải
-            $.when(
-              $.getJSON(API_CONFIG.getParticipantsUrl),
-              $.getJSON(API_CONFIG.getWinnersUrl)
-            ).done(function (resParticipants, resWinners) {
-              participants = resParticipants[0] || [];
-
-              // Gom nhóm danh sách trúng giải theo prizeId
-              Object.keys(winners).forEach(k => winners[k] = []);
-              const savedWinners = resWinners[0] || [];
-              savedWinners.forEach(w => {
-                if (winners[w.prizeId]) {
-                  winners[w.prizeId].push(w);
-                }
+            $.getJSON(API_CONFIG.getParticipantsUrl)
+              .done(function (data) {
+                const list = Array.isArray(data) ? data : [];
+                participants = list.map(mapParticipant).filter(p => p.code);
+                syncParticipantsViews();
+                updateMainUI();
+              })
+              .fail(function (xhr) {
+                const apiMessage = xhr.responseJSON && xhr.responseJSON.message;
+                console.error('Lỗi tải user từ Supabase:', xhr);
+                alert(apiMessage || 'Không tải được danh sách user từ Supabase. Kiểm tra ApiKey trong appsettings.json.');
+                syncParticipantsViews();
+                updateMainUI();
               });
-              if (savedWinners.length > 0) {
-                lastWinner = savedWinners[savedWinners.length - 1];
-              }
-
-              syncParticipantsViews();
-              updateMainUI();
-            }).fail(function (xhr) {
-              console.error('Lỗi tải dữ liệu từ .NET 8:', xhr);
-              alert('Không thể kết nối API .NET 8. Đang sử dụng dữ liệu cục bộ.');
-              syncParticipantsViews();
-              updateMainUI();
-            });
           }
 
           function postWinnerToDotNetApi(winnerObj) {
@@ -1184,15 +1170,7 @@
           });
 
           $('#btnNavbarReload').on('click', function () {
-            if (API_CONFIG.useBackendApi) {
-              loadDataFromDotNetApi();
-            } else {
-              if (!confirm('Làm mới toàn bộ lượt quay hiện tại?')) return;
-              Object.keys(winners).forEach(k => winners[k] = []);
-              lastWinner = null;
-              resetSlotsDisplay();
-              updateMainUI();
-            }
+            loadDataFromDotNetApi();
           });
 
           $('#btnFullscreen').on('click', function () {
