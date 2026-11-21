@@ -76,7 +76,7 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
-WebEventCompany/WebEventCompany/obj/Debug
+WebEventCompany/WebEventCompany/obj/Debug/net8.0/
 *.iobj
 *.pch
 *.pdb
